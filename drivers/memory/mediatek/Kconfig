@@ -1,0 +1,18 @@
+config MEDIATEK_MC
+	bool "MediaTek Memory Controller support"
+	select MEDIATEK_DRAMC
+	help
+	  This driver supports the Memory Controller (MC) hardware found on
+	  MediaTek(R) SoCs. The config selects MEDIATEK_DRAMC and MEDIATEK_EMI
+	  for the control of DRAMC and EMI drivers respectively. This config
+	  will be enabled by default for MTK SoC.
+
+config MEDIATEK_DRAMC
+	tristate "MediaTek DRAMC driver"
+	help
+	  This selects the MediaTek(R) DRAMC driver.
+	  Provide the API for DRAMC data rate, which is useful
+	  for DVFS current freq info, also providing the basic 
+	  DDR Type, and MR4 value and so on.
+	  
+
