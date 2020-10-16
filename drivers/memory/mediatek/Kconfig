@@ -14,5 +14,11 @@ config MEDIATEK_DRAMC
 	  Provide the API for DRAMC data rate, which is useful
 	  for DVFS current freq info, also providing the basic 
 	  DDR Type, and MR4 value and so on.
-	  
+
+config MEDIATEK_EMI
+	tristate "MediaTek EMI driver"
+	help
+	  This selects the MediaTek(R) EMI driver.
+	  Provide the API for MPU register and handle EMI MPU violation,
+	  the API for EMI information, and the sysfs for EMI ISU control.
 
