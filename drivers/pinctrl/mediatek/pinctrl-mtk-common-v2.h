@@ -11,6 +11,8 @@
 
 #include <linux/gpio/driver.h>
 
+#define CONFIG_PINCTRL_MTK_DEBUG
+
 #define MTK_INPUT      0
 #define MTK_OUTPUT     1
 #define MTK_DISABLE    0
@@ -251,6 +253,9 @@ struct mtk_pinctrl {
 	struct mtk_eint			*eint;
 	struct mtk_pinctrl_group	*groups;
 	const char          **grp_names;
+#if defined(CONFIG_PINCTRL_MTK_DEBUG)
+	u32 dbg_start;
+#endif
 };
 
 void mtk_rmw(struct mtk_pinctrl *pctl, u8 i, u32 reg, u32 mask, u32 set);

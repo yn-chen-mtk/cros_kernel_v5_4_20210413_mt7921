@@ -925,6 +925,734 @@ static int mtk_pctrl_build_state(struct platform_device *pdev)
 	return 0;
 }
 
+#if defined(CONFIG_PINCTRL_MTK_DEBUG)
+#define MT8192 1
+#define MT8183 0
+static int mtk_gpio_get_out(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_DO, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_pullen_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_PULLEN, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_ies_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_IES, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_smt_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_SMT, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_driving_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_DRV, &value);
+	if (err)
+		return err;
+
+	return value;
+}
+
+static int mtk_pinmux_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_MODE, &value);
+	if (err)
+		return err;
+
+	return value;
+}
+
+static int mtk_pullsel_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_PULLSEL, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_pullup_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_PU, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_pulldown_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_PD, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+
+static int mtk_pupd_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_PUPD, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_r0_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_R0, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_r1_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_R1, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_i2c_r0_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_R0, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_i2c_r1_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_R1, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_i2c_drv_e0_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_DRV_E0, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_i2c_drv_e1_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_DRV_E1, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static int mtk_i2c_drv_en_dis_get(struct gpio_chip *chip, unsigned int gpio)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int value, err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_get_value(hw, desc, PINCTRL_PIN_REG_DRV_EN, &value);
+	if (err)
+		return err;
+
+	return !!value;
+}
+
+static ssize_t mtk_gpio_show_pin(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int len = 0;
+	int bufLen = (int)PAGE_SIZE;
+	struct mtk_pinctrl *hw = dev_get_drvdata(dev);
+	struct gpio_chip *chip = &(hw->chip);
+	unsigned int i;
+	int pull_sel, pull_en, pull_up, pull_down;
+
+	len += snprintf(buf+len, bufLen-len,
+			"regmap[index]:[base register]\n");
+
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 0, 0x10005000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 1, 0x11f20000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 2, 0x11e80000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 3, 0x11e70000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 4, 0x11e90000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 5, 0x11d30000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 6, 0x11d20000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 7, 0x11c50000);
+	len += snprintf(buf+len, bufLen-len, "[%d]:[%x]\n", 8, 0x11f30000);
+
+	len += snprintf(buf+len, bufLen-len,
+		"sample cmd: echo wr index offset val > mt_gpio .\n");
+	len += snprintf(buf+len, bufLen-len,
+		"sample cmd: echo rr index offset > mt_gpio .\n");
+
+
+	len += snprintf(buf+len, bufLen-len,
+		"gpio base is %d, total num is %d\n",
+		chip->base, chip->ngpio);
+
+	len += snprintf(buf+len, bufLen-len,
+		"PIN: [MODE] [DIR] [DOUT] [DIN] [PULL_EN] [PULL_SEL] [PULL_UP] [PULL_DOWN] [IES] [SMT] [DRIVE] ( [PUPD] [R1] [R0] ) ([E1] [E0] [EN])\n");
+
+	if (hw->dbg_start >= chip->ngpio) {
+		len += snprintf(buf+len, bufLen-len,
+		"wrong gpio-range: start should less than %d!\n",
+		chip->ngpio);
+		return len;
+	}
+
+	for (i = hw->dbg_start; i < chip->ngpio; i++) {
+		pull_sel = mtk_pullsel_get(chip, i);
+		pull_en = mtk_pullen_get(chip, i);
+		pull_up = mtk_pullup_get(chip, i);
+		pull_down = mtk_pulldown_get(chip, i);
+		if ((len+32) >= bufLen)
+			break;
+
+		len += snprintf(buf+len, bufLen-len,
+				"%4d:% d% d% d% d% d% d% d% d% d",
+				i,
+				mtk_pinmux_get(chip, i),
+				!mtk_gpio_get_direction(chip, i),
+				mtk_gpio_get_out(chip, i),
+				mtk_gpio_get(chip, i),
+#if MT8183
+				(pull_en >= 0) ? (pull_en & 1) : -1,
+				(pull_sel >= 0) ? (pull_sel & 1) : -1,
+#elif MT8192
+				(pull_up >= 0) ? (pull_up & 1) : -1,
+				(pull_down >= 0) ? (pull_down & 1) : -1,
+#endif
+				mtk_ies_get(chip, i),
+				mtk_smt_get(chip, i),
+				mtk_driving_get(chip, i));
+		if (((pull_sel & 8) != 0) && (pull_sel >= 0))
+			len += snprintf(buf+len, bufLen-len, " %d %d",
+					!!(pull_sel & 4), !!(pull_sel & 2));
+		if (pull_sel < 0)
+			len += snprintf(buf+len, bufLen-len, "(%d %d %d)",
+				(mtk_pupd_get(chip, i) >= 0)? (mtk_pupd_get(chip, i) & 1) : -1,
+				(mtk_r1_get(chip, i) >= 0)? (mtk_r1_get(chip, i) & 1) : -1,
+				(mtk_r0_get(chip, i) >= 0)? (mtk_r1_get(chip, i) & 1) : -1);
+#if MT8183
+		if (((i >= 48) && (i <= 51)) || ((i >= 81) && (i <= 84))
+			|| ((i >= 103) && (i <= 106))) {
+			len += snprintf(buf+len, bufLen-len, "(%d %d %d)",
+				-1, mtk_i2c_r1_get(chip, i),
+				mtk_i2c_r0_get(chip, i));
+			len += snprintf(buf+len, bufLen-len, "(%d %d %d)",
+				mtk_i2c_drv_e1_get(chip, i),
+				mtk_i2c_drv_e0_get(chip, i),
+				mtk_i2c_drv_en_dis_get(chip, i));
+		}
+#elif MT8192
+		if (((i >= 118) && (i <= 125)) || ((i >= 139) && (i <= 142))
+			|| ((i >= 160) && (i <= 161)) || ((i >= 200) && (i <= 205))) {
+			len += snprintf(buf+len, bufLen-len, "(%d %d %d)",
+				-1, mtk_i2c_r1_get(chip, i),
+				mtk_i2c_r0_get(chip, i));
+			len += snprintf(buf+len, bufLen-len, "(%d %d %d)",
+				mtk_i2c_drv_e1_get(chip, i),
+				mtk_i2c_drv_e0_get(chip, i),
+				mtk_i2c_drv_en_dis_get(chip, i));
+		}
+#endif
+		len += snprintf(buf+len, bufLen-len, "\n");
+	}
+
+	return len;
+}
+
+static int mtk_mode_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_MODE, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_ies_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_IES, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_smt_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_SMT, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_pullen_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PULLEN, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_pullsel_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PULLSEL, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_pullup_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PU, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_pulldown_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PD, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_drv_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int value)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_DRV, value);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_pupd_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int pupd, unsigned int r1, unsigned int r0)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_R1, r1);
+	if (err)
+		return err;
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_R0, r0);
+	if (err)
+		return err;
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_PUPD, pupd);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static int mtk_drv_adv_set(struct gpio_chip *chip, unsigned int gpio,
+	unsigned int en, unsigned int e1, unsigned int e0)
+{
+	struct mtk_pinctrl *hw = gpiochip_get_data(chip);
+	const struct mtk_pin_desc *desc;
+	int err;
+
+	desc = (const struct mtk_pin_desc *)&hw->soc->pins[gpio];
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_DRV_EN, en);
+	if (err)
+		return err;
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_DRV_E1, e1);
+	if (err)
+		return err;
+
+	err = mtk_hw_set_value(hw, desc, PINCTRL_PIN_REG_DRV_E0, e0);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+static ssize_t mtk_gpio_store_pin(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	u32 index, offset, old_val, val, new_val, pin, pupd, r1, r0, en, e1, e0;
+	int val_set;
+
+	struct mtk_pinctrl *hw = dev_get_drvdata(dev);
+	struct pinctrl_dev *pctldev = hw->pctrl;
+	struct gpio_chip *chip = &(hw->chip);
+
+	if ((strncmp(buf, "wr", 2) == 0)
+	    && (sscanf(buf+2, "%d %x %x", &index, &offset, &val) == 3)) {
+		if ((index == 0) && (offset > 0xf60)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 1) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 2) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 3) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 4) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 5) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 6) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 7) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 8) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 9) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 10) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		}
+
+		old_val = readl_relaxed(hw->base[index] + offset);
+		writel_relaxed(val, hw->base[index] + offset);
+		new_val = readl_relaxed(hw->base[index] + offset);
+		pr_err("old_val(0x%x)->new_val(0x%x).\n", old_val, new_val);
+	} else if ((strncmp(buf, "rr", 2) == 0)
+	    && (sscanf(buf+2, "%d %x", &index, &offset) == 2)) {
+		if ((index == 0) && (offset > 0xf60)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 1) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 2) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 3) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 4) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 5) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 6) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 7) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 8) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 9) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		} else if ((index == 10) && (offset > 0xf0)) {
+			pr_err("index(%d),offset(0x%x) invalid.\n",
+				index, offset);
+			goto err_return;
+		}
+		val = readl_relaxed(hw->base[index] + offset);
+		pr_err("regmap[%d]+offset(%x)=0x%x.\n", index, offset, val);
+	} else if ((strncmp(buf, "mode", 4) == 0)
+	    && (sscanf(buf+4, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_mode_set(chip, pin, val);
+	} else if ((strncmp(buf, "dir", 3) == 0)
+		   && (sscanf(buf+3, "%d %d", &pin, &val) == 2)) {
+		val_set  = mtk_pinmux_gpio_set_direction(pctldev,
+			NULL, pin, !(bool)val);
+	} else if ((strncmp(buf, "out", 3) == 0)
+		   && (sscanf(buf+3, "%d %d", &pin, &val) == 2)) {
+		val_set  = mtk_pinmux_gpio_set_direction(pctldev,
+			NULL, pin, false);
+		mtk_gpio_set(chip, pin, val);
+	} else if ((strncmp(buf, "pullen", 6) == 0)
+		   && (sscanf(buf+6, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_pullen_set(chip, pin, val);
+	} else if ((strncmp(buf, "pullsel", 7) == 0)
+		   && (sscanf(buf+7, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_pullsel_set(chip, pin, val);
+	} else if ((strncmp(buf, "pullup", 6) == 0)
+		   && (sscanf(buf+6, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_pullup_set(chip, pin, val);
+	} else if ((strncmp(buf, "pulldn", 6) == 0)
+		   && (sscanf(buf+6, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_pulldown_set(chip, pin, val);
+	} else if ((strncmp(buf, "ies", 3) == 0)
+		   && (sscanf(buf+3, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_ies_set(chip, pin, val);
+	} else if ((strncmp(buf, "smt", 3) == 0)
+		   && (sscanf(buf+3, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_smt_set(chip, pin, val);
+	} else if ((strncmp(buf, "drv", 3) == 0)
+		   && (sscanf(buf+3, "%d %d", &pin, &val) == 2)) {
+		val_set = mtk_drv_set(chip, pin, val);
+	} else if ((strncmp(buf, "pupd", 4) == 0)
+		   && (sscanf(buf+4, "%d %d %d %d", &pin, &pupd, &r1, &r0) == 4)) {
+		val_set = mtk_pupd_set(chip, pin, pupd, r1, r0);
+	} else if ((strncmp(buf, "drv_adv", 7) == 0)
+		   && (sscanf(buf+7, "%d %d %d %d", &pin, &en, &e1, &e0) == 4)) {
+		val_set = mtk_drv_adv_set(chip, pin, en, e1, e0);
+	} else if ((strncmp(buf, "start", 5) == 0)
+		   && (sscanf(buf+5, "%d", &val) == 1)) {
+		hw->dbg_start = (u32)val;
+	} else {
+	}
+
+	return (ssize_t)count;
+
+err_return:
+
+	return (ssize_t)0;
+}
+
+static DEVICE_ATTR(mt_gpio, 0664, mtk_gpio_show_pin, mtk_gpio_store_pin);
+
+static struct device_attribute *gpio_attr_list[] = {
+	&dev_attr_mt_gpio,
+};
+
+static int mtk_gpio_create_attr(struct device *dev)
+{
+	int idx, err = 0;
+	int num = (int)ARRAY_SIZE(gpio_attr_list);
+
+	if (dev == NULL)
+		return -EINVAL;
+
+	for (idx = 0; idx < num; idx++) {
+		err = device_create_file(dev, gpio_attr_list[idx]);
+		if (err > 0)
+			break;
+	}
+
+	return err;
+}
+
+#endif
+
 int mtk_paris_pinctrl_probe(struct platform_device *pdev,
 			    const struct mtk_pin_soc *soc)
 {
@@ -1015,6 +1743,12 @@ int mtk_paris_pinctrl_probe(struct platform_device *pdev,
 	}
 
 	platform_set_drvdata(pdev, hw);
+	
+#if defined(CONFIG_PINCTRL_MTK_DEBUG)
+	err = mtk_gpio_create_attr(&pdev->dev);
+	if (err < 0)
+		pr_warn("mtk_gpio create attribute error\n");
+#endif
 
 	return 0;
 }
