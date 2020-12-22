@@ -128,6 +128,14 @@ struct mu3c_ippc_regs {
 	__le32 reserved3[33]; /* 0x80 ~ 0xff */
 };
 
+enum xhci_mtk_seal {
+	SEAL_BUSY = 0,
+	SEAL_SUSPENDING,
+	SEAL_SUSPENDED,
+	SEAL_RESUMING,
+	SEAL_RESUMED
+};
+
 struct xhci_hcd_mtk {
 	struct device *dev;
 	struct usb_hcd *hcd;
@@ -155,6 +163,12 @@ struct xhci_hcd_mtk {
 	struct regmap *uwk;
 	u32 uwk_reg_base;
 	u32 uwk_vers;
+
+	/* usb eint wakeup source */
+	int seal_irq;
+	enum xhci_mtk_seal seal_status;
+	struct delayed_work  seal;
+	char   seal_descr[32];	/* "seal" + driver + bus # */
 };
 
 static inline struct xhci_hcd_mtk *hcd_to_mtk(struct usb_hcd *hcd)
