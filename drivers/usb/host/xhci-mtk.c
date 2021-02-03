@@ -101,8 +101,7 @@ static void xhci_mtk_seal_work(struct work_struct *work)
 	xhci_dbg(xhci, "spm unseals xHCI controller %i\n", mtk->seal_status);
 	if (mtk->seal_status == SEAL_SUSPENDED) {
 		mtk->seal_status = SEAL_RESUMING;
-		pm_runtime_mark_last_busy(mtk->dev);
-		pm_runtime_put_sync_autosuspend(mtk->dev);
+		pm_runtime_get_sync(mtk->dev);
 	} else {
 		/*
 		 * FIXME: Sometimes seal_status will keep it on SEAL_RESUMING staus not to expect
