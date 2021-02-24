@@ -2430,6 +2430,35 @@ static int __maybe_unused anx7625_suspend(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(anx7625_pm_ops, anx7625_suspend, anx7625_resume);
 
+static ssize_t anx7625_power_supply_store(struct device *dev,
+					  struct device_attribute *attr,
+					  const char *buf, size_t size)
+{
+	struct anx7625_data *ctx = dev_get_drvdata(dev);
+	unsigned long state;
+
+	if (kstrtoul(buf, 10, &state))
+		return -EINVAL;
+
+	if (state == 0 || state == 1)
+		anx7625_chip_control(ctx, state);
+	else
+		return -EINVAL;
+
+	return size;
+}
+
+static DEVICE_ATTR(power_supply, S_IWUSR, NULL, anx7625_power_supply_store);
+
+static struct attribute *anx7625_attrs[] = {
+	&dev_attr_power_supply.attr,
+	NULL
+};
+
+static const struct attribute_group anx7625_attr_group = {
+	.attrs = anx7625_attrs,
+};
+
 static int anx7625_i2c_probe(struct i2c_client *client,
 			     const struct i2c_device_id *id)
 {
@@ -2461,6 +2490,12 @@ static int anx7625_i2c_probe(struct i2c_client *client,
 
 	platform->client = client;
 	i2c_set_clientdata(client, platform);
+
+	ret = sysfs_create_group(&client->dev.kobj, &anx7625_attr_group);
+	if (ret) {
+		dev_err(dev, "failed to create sysfs entries: %d\n", ret);
+		goto free_platform;
+	}
 
 	pdata->supplies[0].supply = "vdd10";
 	pdata->supplies[1].supply = "vdd18";
@@ -2552,6 +2587,7 @@ static int anx7625_i2c_remove(struct i2c_client *client)
 	struct anx7625_data *platform = i2c_get_clientdata(client);
 
 	drm_bridge_remove(&platform->bridge);
+	sysfs_remove_group(&client->dev.kobj, &anx7625_attr_group);
 
 #if IS_ENABLED(CONFIG_TYPEC)
 	if (!platform->pdata.panel_bridge && platform->pdata.tx_rx_to_two_ports)
