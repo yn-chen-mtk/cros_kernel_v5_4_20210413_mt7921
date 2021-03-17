@@ -278,7 +278,8 @@ struct v4l2_vp9_probabilities {
  * for more details.
  */
 enum v4l2_vp9_reset_frame_context {
-	V4L2_VP9_RESET_FRAME_CTX_NONE,
+	V4L2_VP9_RESET_FRAME_CTX_NONE_0,
+	V4L2_VP9_RESET_FRAME_CTX_NONE_1,
 	V4L2_VP9_RESET_FRAME_CTX_SPEC,
 	V4L2_VP9_RESET_FRAME_CTX_ALL,
 };
