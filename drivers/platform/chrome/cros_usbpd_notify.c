@@ -220,7 +220,9 @@ static int cros_usbpd_notify_plat(struct notifier_block *nb,
 	if (!host_event)
 		return NOTIFY_DONE;
 
-	if (host_event & EC_HOST_EVENT_MASK(EC_HOST_EVENT_PD_MCU)) {
+	/* TODO(pihsun): Check what to do on ACPI system for EC_HOST_EVENT_USB_MUX */
+	if (host_event & (EC_HOST_EVENT_MASK(EC_HOST_EVENT_PD_MCU) |
+			  EC_HOST_EVENT_MASK(EC_HOST_EVENT_USB_MUX))) {
 		cros_usbpd_get_event_and_notify(pdnotify->dev, ec_dev);
 		return NOTIFY_OK;
 	}
