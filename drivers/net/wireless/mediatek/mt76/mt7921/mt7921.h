@@ -169,6 +169,8 @@ struct mt7921_dev {
 
 	struct mt76_connac_pm pm;
 	struct mt76_connac_coredump coredump;
+
+	struct pci_dev *pdev;
 };
 
 enum {
