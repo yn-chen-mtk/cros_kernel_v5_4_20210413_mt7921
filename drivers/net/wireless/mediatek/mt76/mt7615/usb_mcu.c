@@ -15,28 +15,33 @@
 
 static int
 mt7663u_mcu_send_message(struct mt76_dev *mdev, struct sk_buff *skb,
-			 int cmd, int *seq)
+			 int cmd, bool wait_resp)
 {
 	struct mt7615_dev *dev = container_of(mdev, struct mt7615_dev, mt76);
-	int ret, ep, len, pad;
+	int ret, seq, ep;
 
-	mt7615_mcu_fill_msg(dev, skb, cmd, seq);
+	mutex_lock(&mdev->mcu.mutex);
+
+	mt7615_mcu_fill_msg(dev, skb, cmd, &seq);
 	if (cmd != MCU_CMD_FW_SCATTER)
 		ep = MT_EP_OUT_INBAND_CMD;
 	else
 		ep = MT_EP_OUT_AC_BE;
 
-	len = skb->len;
-	put_unaligned_le32(len, skb_push(skb, sizeof(len)));
-	pad = round_up(skb->len, 4) + 4 - skb->len;
-	ret = mt76_skb_adjust_pad(skb, pad);
+	ret = mt76u_skb_dma_info(skb, skb->len);
 	if (ret < 0)
 		goto out;
 
 	ret = mt76u_bulk_msg(&dev->mt76, skb->data, skb->len, NULL,
 			     1000, ep);
+	if (ret < 0)
+		goto out;
+
+	if (wait_resp)
+		ret = mt7615_mcu_wait_response(dev, cmd, seq);
 
 out:
+	mutex_unlock(&mdev->mcu.mutex);
 	dev_kfree_skb(skb);
 
 	return ret;
@@ -48,15 +53,13 @@ int mt7663u_mcu_init(struct mt7615_dev *dev)
 		.headroom = MT_USB_HDR_SIZE + sizeof(struct mt7615_mcu_txd),
 		.tailroom = MT_USB_TAIL_SIZE,
 		.mcu_skb_send_msg = mt7663u_mcu_send_message,
-		.mcu_parse_response = mt7615_mcu_parse_response,
+		.mcu_send_msg = mt7615_mcu_msg_send,
 		.mcu_restart = mt7615_mcu_restart,
 	};
 	int ret;
 
 	dev->mt76.mcu_ops = &mt7663u_mcu_ops,
 
-	/* usb does not support runtime-pm */
-	clear_bit(MT76_STATE_PM, &dev->mphy.state);
 	mt76_set(dev, MT_UDMA_TX_QSEL, MT_FW_DL_EN);
 
 	if (test_and_clear_bit(MT76_STATE_POWER_OFF, &dev->mphy.state)) {
