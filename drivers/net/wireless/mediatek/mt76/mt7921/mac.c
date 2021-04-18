@@ -1326,6 +1326,7 @@ void mt7921_mac_reset_work(struct work_struct *work)
 	ieee80211_iterate_active_interfaces(hw,
 					    IEEE80211_IFACE_ITER_RESUME_ALL,
 					    mt7921_vif_connect_iter, NULL);
+	dev_err(dev->mt76.dev, "chip reset done\n");
 }
 
 void mt7921_reset(struct mt76_dev *mdev)

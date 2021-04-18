@@ -12,6 +12,8 @@
 #include "mcu.h"
 #include "../trace.h"
 
+#define MT7921_DRIVER_VERSION "v2.0.0_20210418"
+
 static const struct pci_device_id mt7921_pci_device_table[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_MEDIATEK, 0x7961) },
 	{ },
@@ -146,6 +148,7 @@ static int mt7921_pci_probe(struct pci_dev *pdev,
 	mdev->rev = (mt7921_l1_rr(dev, MT_HW_CHIPID) << 16) |
 		    (mt7921_l1_rr(dev, MT_HW_REV) & 0xff);
 	dev_err(mdev->dev, "ASIC revision: %04x\n", mdev->rev);
+	dev_info(mdev->dev, "driver version: %s\n", MT7921_DRIVER_VERSION);
 
 	mt76_wr(dev, MT_WFDMA0_HOST_INT_ENA, 0);
 
@@ -192,6 +195,7 @@ static int mt7921_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	bool hif_suspend;
 	int i, err;
 
+	dev_info(mdev->dev, "[Debug] %s +", __func__);
 	err = mt76_connac_pm_wake(&dev->mphy, &dev->pm);
 	if (err < 0)
 		return err;
@@ -239,6 +243,7 @@ static int mt7921_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (err)
 		goto restore;
 
+	dev_info(mdev->dev, "[Debug] %s ok -", __func__);
 	return 0;
 
 restore:
@@ -253,6 +258,7 @@ restore:
 	if (hif_suspend)
 		mt76_connac_mcu_set_hif_suspend(mdev, false);
 
+	dev_info(mdev->dev, "[Debug] %s fail -", __func__);
 	return err;
 }
 
@@ -262,6 +268,7 @@ static int mt7921_pci_resume(struct pci_dev *pdev)
 	struct mt7921_dev *dev = container_of(mdev, struct mt7921_dev, mt76);
 	int i, err;
 
+	dev_info(mdev->dev, "[Debug] %s +", __func__);
 	err = pci_set_power_state(pdev, PCI_D0);
 	if (err)
 		return err;
@@ -298,6 +305,7 @@ static int mt7921_pci_resume(struct pci_dev *pdev)
 	if (!test_bit(MT76_STATE_SUSPEND, &dev->mphy.state))
 		err = mt76_connac_mcu_set_hif_suspend(mdev, false);
 
+	dev_info(mdev->dev, "[Debug] %s -", __func__);
 	return err;
 }
 #endif /* CONFIG_PM */

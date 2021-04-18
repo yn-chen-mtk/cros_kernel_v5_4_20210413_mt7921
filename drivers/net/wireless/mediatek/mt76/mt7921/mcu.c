@@ -451,6 +451,7 @@ mt7921_mcu_beacon_loss_event(struct mt7921_dev *dev, struct sk_buff *skb)
 	struct mt76_phy *mphy;
 	u8 band_idx = 0; /* DBDC support */
 
+	dev_info(dev->mt76.dev, "[Debug] %s", __func__);
 	skb_pull(skb, sizeof(struct mt7921_mcu_rxd));
 	event = (struct mt76_connac_beacon_loss_event *)skb->data;
 	if (band_idx && dev->mt76.phy2)
