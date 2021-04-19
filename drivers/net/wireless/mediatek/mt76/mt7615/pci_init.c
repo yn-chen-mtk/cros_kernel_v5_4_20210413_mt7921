@@ -12,24 +12,19 @@
 #include "mac.h"
 #include "eeprom.h"
 
-static void mt7615_pci_init_work(struct work_struct *work)
+static void mt7615_init_work(struct work_struct *work)
 {
 	struct mt7615_dev *dev = container_of(work, struct mt7615_dev,
 					      mcu_work);
-	int i, ret;
 
-	ret = mt7615_mcu_init(dev);
-	for (i = 0; (ret == -EAGAIN) && (i < 10); i++) {
-		msleep(200);
-		ret = mt7615_mcu_init(dev);
-	}
-
-	if (ret)
+	if (mt7615_mcu_init(dev))
 		return;
 
-	mt7615_init_work(dev);
-	if (dev->dbdc_support)
-		mt7615_register_ext_phy(dev);
+	mt7615_mcu_set_eeprom(dev);
+	mt7615_mac_init(dev);
+	mt7615_phy_init(dev);
+	mt7615_mcu_del_wtbl_all(dev);
+	mt7615_check_offload_capability(dev);
 }
 
 static int mt7615_init_hardware(struct mt7615_dev *dev)
@@ -39,7 +34,7 @@ static int mt7615_init_hardware(struct mt7615_dev *dev)
 
 	mt76_wr(dev, MT_INT_SOURCE_CSR, ~0);
 
-	INIT_WORK(&dev->mcu_work, mt7615_pci_init_work);
+	INIT_WORK(&dev->mcu_work, mt7615_init_work);
 	spin_lock_init(&dev->token_lock);
 	idr_init(&dev->token);
 
@@ -75,10 +70,6 @@ mt7615_led_set_config(struct led_classdev *led_cdev,
 
 	mt76 = container_of(led_cdev, struct mt76_dev, led_cdev);
 	dev = container_of(mt76, struct mt7615_dev, mt76);
-
-	if (test_bit(MT76_STATE_PM, &mt76->phy.state))
-		return;
-
 	val = FIELD_PREP(MT_LED_STATUS_DURATION, 0xffff) |
 	      FIELD_PREP(MT_LED_STATUS_OFF, delay_off) |
 	      FIELD_PREP(MT_LED_STATUS_ON, delay_on);
@@ -155,7 +146,9 @@ int mt7615_register_device(struct mt7615_dev *dev)
 
 void mt7615_unregister_device(struct mt7615_dev *dev)
 {
+	struct mt76_txwi_cache *txwi;
 	bool mcu_running;
+	int id;
 
 	mcu_running = mt7615_wait_for_mcu_init(dev);
 
@@ -165,7 +158,15 @@ void mt7615_unregister_device(struct mt7615_dev *dev)
 		mt7615_mcu_exit(dev);
 	mt7615_dma_cleanup(dev);
 
-	mt7615_tx_token_put(dev);
+	spin_lock_bh(&dev->token_lock);
+	idr_for_each_entry(&dev->token, txwi, id) {
+		mt7615_txp_skb_unmap(&dev->mt76, txwi);
+		if (txwi->skb)
+			dev_kfree_skb_any(txwi->skb);
+		mt76_put_txwi(&dev->mt76, txwi);
+	}
+	spin_unlock_bh(&dev->token_lock);
+	idr_destroy(&dev->token);
 
 	tasklet_disable(&dev->irq_tasklet);
 

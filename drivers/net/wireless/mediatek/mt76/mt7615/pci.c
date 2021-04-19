@@ -10,12 +10,11 @@
 #include <linux/pci.h>
 
 #include "mt7615.h"
-#include "mcu.h"
 
 static const struct pci_device_id mt7615_pci_device_table[] = {
-	{ PCI_DEVICE(PCI_VENDOR_ID_MEDIATEK, 0x7615) },
-	{ PCI_DEVICE(PCI_VENDOR_ID_MEDIATEK, 0x7663) },
-	{ PCI_DEVICE(PCI_VENDOR_ID_MEDIATEK, 0x7611) },
+	{ PCI_DEVICE(0x14c3, 0x7615) },
+	{ PCI_DEVICE(0x14c3, 0x7663) },
+	{ PCI_DEVICE(0x14c3, 0x7611) },
 	{ },
 };
 
@@ -76,20 +75,16 @@ static int mt7615_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	bool hif_suspend;
 	int i, err;
 
-	err = mt76_connac_pm_wake(&dev->mphy, &dev->pm);
-	if (err < 0)
-		return err;
-
 	hif_suspend = !test_bit(MT76_STATE_SUSPEND, &dev->mphy.state) &&
 		      mt7615_firmware_offload(dev);
 	if (hif_suspend) {
-		err = mt76_connac_mcu_set_hif_suspend(mdev, true);
+		err = mt7615_mcu_set_hif_suspend(dev, true);
 		if (err)
 			return err;
 	}
 
 	napi_disable(&mdev->tx_napi);
-	mt76_worker_disable(&mdev->tx_worker);
+	tasklet_kill(&mdev->tx_tasklet);
 
 	mt76_for_each_q_rx(mdev, i) {
 		napi_disable(&mdev->napi[i]);
@@ -119,7 +114,7 @@ static int mt7615_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (err)
 		goto restore;
 
-	err = mt7615_mcu_set_fw_ctrl(dev);
+	err = mt7615_firmware_own(dev);
 	if (err)
 		goto restore;
 
@@ -131,7 +126,7 @@ restore:
 	}
 	napi_enable(&mdev->tx_napi);
 	if (hif_suspend)
-		mt76_connac_mcu_set_hif_suspend(mdev, false);
+		mt7615_mcu_set_hif_suspend(dev, false);
 
 	return err;
 }
@@ -143,7 +138,7 @@ static int mt7615_pci_resume(struct pci_dev *pdev)
 	bool pdma_reset;
 	int i, err;
 
-	err = mt7615_mcu_set_drv_ctrl(dev);
+	err = mt7615_driver_own(dev);
 	if (err < 0)
 		return err;
 
@@ -163,7 +158,6 @@ static int mt7615_pci_resume(struct pci_dev *pdev)
 	if (pdma_reset)
 		dev_err(mdev->dev, "PDMA engine must be reinitialized\n");
 
-	mt76_worker_enable(&mdev->tx_worker);
 	mt76_for_each_q_rx(mdev, i) {
 		napi_enable(&mdev->napi[i]);
 		napi_schedule(&mdev->napi[i]);
@@ -173,7 +167,7 @@ static int mt7615_pci_resume(struct pci_dev *pdev)
 
 	if (!test_bit(MT76_STATE_SUSPEND, &dev->mphy.state) &&
 	    mt7615_firmware_offload(dev))
-		err = mt76_connac_mcu_set_hif_suspend(mdev, false);
+		err = mt7615_mcu_set_hif_suspend(dev, false);
 
 	return err;
 }
