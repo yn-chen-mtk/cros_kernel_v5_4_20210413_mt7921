@@ -6,42 +6,88 @@
 #include "mt76.h"
 #include <linux/pci.h>
 
-void mt76_pci_disable_aspm(struct pci_dev *pdev)
+#define  PCIE_L1SS_CAP_CHK \
+	(PCI_L1SS_CAP_PCIPM_L1_1 | PCI_L1SS_CAP_PCIPM_L1_2 | \
+	PCI_L1SS_CAP_ASPM_L1_1 |PCI_L1SS_CAP_ASPM_L1_2)
+#define  PCIE_L1SS_CTL_CHK \
+	(PCI_L1SS_CTL1_PCIPM_L1_1 | PCI_L1SS_CTL1_PCIPM_L1_2 | \
+	PCI_L1SS_CTL1_ASPM_L1_1 |PCI_L1SS_CTL1_ASPM_L1_2)
+
+static void _mt76_pci_config_L1(struct pci_dev *pdev, u8 enable)
 {
-	struct pci_dev *parent = pdev->bus->self;
-	u16 aspm_conf, parent_aspm_conf = 0;
+	u32 reg32;
+	int pos;
 
-	pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &aspm_conf);
-	aspm_conf &= PCI_EXP_LNKCTL_ASPMC;
-	if (parent) {
-		pcie_capability_read_word(parent, PCI_EXP_LNKCTL,
-					  &parent_aspm_conf);
-		parent_aspm_conf &= PCI_EXP_LNKCTL_ASPMC;
-	}
+	if (!pdev)
+		return;
 
-	if (!aspm_conf && (!parent || !parent_aspm_conf)) {
-		/* aspm already disabled */
+	/* capability check */
+	pos = pdev->pcie_cap;
+	pci_read_config_dword(pdev, pos + PCI_EXP_LNKCAP, &reg32);
+	if (!(reg32 & PCI_EXP_LNKCAP_ASPMS)) {
+		dev_dbg(&pdev->dev, "ASPM L1: Invalid cap 0x%X\n", reg32);
 		return;
 	}
 
-	dev_info(&pdev->dev, "disabling ASPM %s %s\n",
-		 (aspm_conf & PCI_EXP_LNKCTL_ASPM_L0S) ? "L0s" : "",
-		 (aspm_conf & PCI_EXP_LNKCTL_ASPM_L1) ? "L1" : "");
-
-	if (IS_ENABLED(CONFIG_PCIEASPM)) {
-		int err;
-
-		err = pci_disable_link_state(pdev, aspm_conf);
-		if (!err)
+	/* set config */
+	pci_read_config_dword(pdev, pos + PCI_EXP_LNKCTL, &reg32);
+	if (enable) {
+		if (reg32 & PCI_EXP_LNKCTL_ASPMC)
 			return;
+		reg32 |= (PCI_EXP_LNKCTL_ASPMC);
+	} else {
+		if (!(reg32 & PCI_EXP_LNKCTL_ASPMC))
+			return;
+		reg32 &= ~(PCI_EXP_LNKCTL_ASPMC);
+	}
+	dev_dbg(&pdev->dev, "%s ASPM L1\n", (enable)?"enabling":"disabling");
+
+	pci_write_config_dword(pdev, pos + PCI_EXP_LNKCTL, reg32);
+}
+
+static void _mt76_pci_config_L1ss(struct pci_dev *pdev, u8 enable)
+{
+	int pos;
+	u32 reg32;
+
+	if (!pdev)
+		return;
+
+	/* capability check */
+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_L1SS);
+	pci_read_config_dword(pdev, pos + PCI_L1SS_CAP, &reg32);
+	if (!(reg32 & (PCIE_L1SS_CAP_CHK))) {
+		dev_dbg(&pdev->dev, "ASPM L1SS: Invalid cap 0x%X\n", reg32);
+		return;
 	}
 
-	/* both device and parent should have the same ASPM setting.
-	 * disable ASPM in downstream component first and then upstream.
-	 */
-	pcie_capability_clear_word(pdev, PCI_EXP_LNKCTL, aspm_conf);
-	if (parent)
-		pcie_capability_clear_word(parent, PCI_EXP_LNKCTL,
-					   aspm_conf);
+	/* set config */
+	pci_read_config_dword(pdev, pos + PCI_L1SS_CTL1, &reg32);
+	if (enable) {
+		if (reg32 & PCIE_L1SS_CTL_CHK)
+			return;
+		reg32 |= (PCIE_L1SS_CTL_CHK);
+	} else {
+		if (!(reg32 & PCIE_L1SS_CTL_CHK))
+			return;
+		reg32 &= ~(PCIE_L1SS_CTL_CHK);
+	}
+
+	dev_dbg(&pdev->dev, "%s ASPM L1SS\n", (enable)?"enabling":"disabling");
+
+	pci_write_config_dword(pdev, pos + PCI_L1SS_CTL1, reg32);
+}
+
+void mt76_pci_disable_aspm(struct pci_dev *pdev)
+{
+	_mt76_pci_config_L1(pdev, false);
+	_mt76_pci_config_L1ss(pdev, false);
 }
 EXPORT_SYMBOL_GPL(mt76_pci_disable_aspm);
+
+void mt76_pci_enable_aspm(struct pci_dev *pdev)
+{
+	_mt76_pci_config_L1ss(pdev, true);
+	_mt76_pci_config_L1(pdev, true);
+}
+EXPORT_SYMBOL_GPL(mt76_pci_enable_aspm);

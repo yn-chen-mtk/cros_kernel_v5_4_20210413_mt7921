@@ -143,6 +143,8 @@ static int mt7921_pci_probe(struct pci_dev *pdev,
 
 	dev = container_of(mdev, struct mt7921_dev, mt76);
 
+	dev->pdev = pdev;
+
 	mt76_mmio_init(&dev->mt76, pcim_iomap_table(pdev)[0]);
 	tasklet_init(&dev->irq_tasklet, mt7921_irq_tasklet, (unsigned long)dev);
 	mdev->rev = (mt7921_l1_rr(dev, MT_HW_CHIPID) << 16) |

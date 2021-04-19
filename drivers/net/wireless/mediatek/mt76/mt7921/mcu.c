@@ -1310,6 +1310,8 @@ int mt7921_mcu_drv_pmctrl(struct mt7921_dev *dev)
 		goto out;
 	}
 
+	mt76_pci_disable_aspm(dev->pdev);
+
 	/* check if the wpdma must be reinitialized */
 	if (mt7921_dma_need_reinit(dev)) {
 		/* disable interrutpts */
@@ -1366,6 +1368,8 @@ int mt7921_mcu_fw_pmctrl(struct mt7921_dev *dev)
 	pm->stats.last_doze_event = jiffies;
 	pm->stats.awake_time += pm->stats.last_doze_event -
 				pm->stats.last_wake_event;
+
+	mt76_pci_enable_aspm(dev->pdev);
 out:
 	mutex_unlock(&pm->mutex);
 

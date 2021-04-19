@@ -150,6 +150,7 @@ struct mt7921_dev {
 		struct mt76_phy mphy;
 	};
 
+	struct pci_dev *pdev;
 	const struct mt76_bus_ops *bus_ops;
 	struct mt7921_phy phy;
 	struct tasklet_struct irq_tasklet;
@@ -169,8 +170,6 @@ struct mt7921_dev {
 
 	struct mt76_connac_pm pm;
 	struct mt76_connac_coredump coredump;
-
-	struct pci_dev *pdev;
 };
 
 enum {
