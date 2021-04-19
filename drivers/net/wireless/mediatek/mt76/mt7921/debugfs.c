@@ -231,7 +231,6 @@ mt7921_pm_set(void *data, u64 val)
 {
 	struct mt7921_dev *dev = data;
 	struct mt76_connac_pm *pm = &dev->pm;
-	struct mt76_phy *mphy = dev->phy.mt76;
 
 	if (val == pm->enable)
 		return 0;
@@ -244,9 +243,8 @@ mt7921_pm_set(void *data, u64 val)
 	}
 	pm->enable = val;
 
-	ieee80211_iterate_active_interfaces(mphy->hw,
-					    IEEE80211_IFACE_ITER_RESUME_ALL,
-					    mt7921_pm_interface_iter, mphy->priv);
+	mt76_connac_mcu_set_deep_sleep(&dev->mt76, !!pm->enable);
+
 	mt7921_mutex_release(dev);
 
 	return 0;
