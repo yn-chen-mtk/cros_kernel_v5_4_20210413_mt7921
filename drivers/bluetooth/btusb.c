@@ -25,7 +25,7 @@
 #include "btbcm.h"
 #include "btrtl.h"
 
-#define VERSION "0.8"
+#define VERSION "1.0.0.20210419"
 
 static bool disable_scofix;
 static bool force_scofix;
@@ -377,6 +377,11 @@ static const struct usb_device_id blacklist_table[] = {
 	  .driver_info = BTUSB_MEDIATEK |
 			 BTUSB_WIDEBAND_SPEECH |
 			 BTUSB_VALID_LE_STATES },
+
+	/* Additional MediaTek MT7921 Bluetooth devices */
+	{ USB_DEVICE(0x04ca, 0x3802), .driver_info = BTUSB_MEDIATEK |
+						     BTUSB_WIDEBAND_SPEECH |
+						     BTUSB_VALID_LE_STATES },
 
 	/* Additional Realtek 8723AE Bluetooth devices */
 	{ USB_DEVICE(0x0930, 0x021d), .driver_info = BTUSB_REALTEK },
@@ -3000,11 +3005,6 @@ static int btusb_mtk_hci_wmt_sync(struct hci_dev *hdev,
 	struct btmtk_wmt_hdr *hdr;
 	int err;
 
-	/* Submit control IN URB on demand to process the WMT event */
-	err = btusb_mtk_submit_wmt_recv_urb(hdev);
-	if (err < 0)
-		return err;
-
 	/* Send the WMT command and wait until the WMT event returns */
 	hlen = sizeof(*hdr) + wmt_params->dlen;
 	if (hlen > 255)
@@ -3029,6 +3029,11 @@ static int btusb_mtk_hci_wmt_sync(struct hci_dev *hdev,
 		clear_bit(BTUSB_TX_WAIT_VND_EVT, &data->flags);
 		goto err_free_wc;
 	}
+
+	/* Submit control IN URB on demand to process the WMT event */
+	err = btusb_mtk_submit_wmt_recv_urb(hdev);
+	if (err < 0)
+		goto err_free_wc;
 
 	/* The vendor specific WMT commands are all answered by a vendor
 	 * specific event and will have the Command Status or Command
@@ -3105,6 +3110,7 @@ static int btusb_mtk_setup_firmware_79xx(struct hci_dev *hdev, const char *fwnam
 	struct btmtk_hci_wmt_params wmt_params;
 	struct btmtk_global_desc *globaldesc = NULL;
 	struct btmtk_section_map *sectionmap;
+	struct btmtk_patch_header *patchhdr = NULL;
 	const struct firmware *fw;
 	const u8 *fw_ptr;
 	const u8 *fw_bin_ptr;
@@ -3123,6 +3129,9 @@ static int btusb_mtk_setup_firmware_79xx(struct hci_dev *hdev, const char *fwnam
 	fw_bin_ptr = fw_ptr;
 	globaldesc = (struct btmtk_global_desc *)(fw_ptr + MTK_FW_ROM_PATCH_HEADER_SIZE);
 	section_num = le32_to_cpu(globaldesc->section_num);
+	patchhdr = (struct btmtk_patch_header*)fw_ptr;
+
+	bt_dev_info(hdev, "Built Time = %s", patchhdr->datetime);
 
 	for (i = 0; i < section_num; i++) {
 		first_block = 1;
@@ -3370,6 +3379,7 @@ static int btusb_mtk_setup(struct hci_dev *hdev)
 	u32 fw_version = 0;
 	u8 param;
 
+	bt_dev_info(hdev, "btusb_mtk_setup");
 	calltime = ktime_get();
 
 	err = btusb_mtk_id_get(data, 0x80000008, &dev_id);
@@ -3511,6 +3521,8 @@ static int btusb_mtk_shutdown(struct hci_dev *hdev)
 	u8 param = 0;
 	int err;
 
+	bt_dev_info(hdev, "btusb_mtk_shut_down");
+
 	/* Disable the device */
 	wmt_params.op = BTMTK_WMT_FUNC_CTRL;
 	wmt_params.flag = 0;
@@ -3525,6 +3537,71 @@ static int btusb_mtk_shutdown(struct hci_dev *hdev)
 	}
 
 	return 0;
+}
+
+static int btusb_recv_bulk_mtk(struct btusb_data *data, void *buffer, int count)
+{
+	struct sk_buff *skb;
+	unsigned long flags;
+	int err = 0;
+
+	spin_lock_irqsave(&data->rxlock, flags);
+	skb = data->acl_skb;
+
+	while (count) {
+		int len;
+
+		if (!skb) {
+			skb = bt_skb_alloc(HCI_MAX_FRAME_SIZE, GFP_ATOMIC);
+			if (!skb) {
+				err = -ENOMEM;
+				break;
+			}
+
+			hci_skb_pkt_type(skb) = HCI_ACLDATA_PKT;
+			hci_skb_expect(skb) = HCI_ACL_HDR_SIZE;
+		}
+
+		len = min_t(uint, hci_skb_expect(skb), count);
+		skb_put_data(skb, buffer, len);
+
+		count -= len;
+		buffer += len;
+		hci_skb_expect(skb) -= len;
+
+		if (skb->len == HCI_ACL_HDR_SIZE) {
+			__le16 dlen = hci_acl_hdr(skb)->dlen;
+
+			/* Complete ACL header */
+			hci_skb_expect(skb) = __le16_to_cpu(dlen);
+
+			if (skb_tailroom(skb) < hci_skb_expect(skb)) {
+				kfree_skb(skb);
+				skb = NULL;
+
+				err = -EILSEQ;
+				break;
+			}
+		}
+
+		if (!hci_skb_expect(skb)) {
+			/* Complete frame */
+			if (skb->data[0] == 0x6f && skb->data[1] == 0xfc){
+				hci_recv_diag(data->hdev, skb);
+			} else if ((skb->data[0] == 0xfe && skb->data[1] == 0x05) ||
+				  (skb->data[0] == 0xff && skb->data[1] == 0x05)) {
+				hci_recv_diag(data->hdev, skb);
+			} else {
+				btusb_recv_acl(data, skb);
+			}
+			skb = NULL;
+		}
+	}
+
+	data->acl_skb = skb;
+	spin_unlock_irqrestore(&data->rxlock, flags);
+
+	return err;
 }
 
 MODULE_FIRMWARE(FIRMWARE_MT7663);
@@ -4077,6 +4154,7 @@ static int btusb_probe(struct usb_interface *intf,
 	int i, err;
 
 	BT_DBG("intf %p id %p", intf, id);
+	BT_INFO("MTK BT Driver Version: %s", VERSION);
 
 	/* interface numbers are hardcoded in the spec */
 	if (intf->cur_altsetting->desc.bInterfaceNumber != 0) {
@@ -4302,6 +4380,9 @@ static int btusb_probe(struct usb_interface *intf,
 		hdev->setup = btusb_mtk_setup;
 		hdev->shutdown = btusb_mtk_shutdown;
 		hdev->manufacturer = 70;
+		data->recv_bulk = btusb_recv_bulk_mtk;
+		set_bit(HCI_QUIRK_SIMULTANEOUS_DISCOVERY, &hdev->quirks);
+		set_bit(HCI_QUIRK_VALID_LE_STATES, &hdev->quirks);
 		set_bit(HCI_QUIRK_NON_PERSISTENT_SETUP, &hdev->quirks);
 	}
 #endif
@@ -4422,8 +4503,8 @@ static int btusb_probe(struct usb_interface *intf,
 	}
 #endif
 
-	if (!enable_autosuspend)
-		usb_disable_autosuspend(data->udev);
+	if (enable_autosuspend)
+		usb_enable_autosuspend(data->udev);
 
 	err = hci_register_dev(hdev);
 	if (err < 0)
@@ -4483,9 +4564,6 @@ static void btusb_disconnect(struct usb_interface *intf)
 		gpiod_put(data->reset_gpio);
 
 	hci_free_dev(hdev);
-
-	if (!enable_autosuspend)
-		usb_enable_autosuspend(data->udev);
 }
 
 #ifdef CONFIG_PM
@@ -4493,7 +4571,7 @@ static int btusb_suspend(struct usb_interface *intf, pm_message_t message)
 {
 	struct btusb_data *data = usb_get_intfdata(intf);
 
-	BT_DBG("intf %p", intf);
+	BT_DBG("btusb_suspend intf %p", intf);
 
 	if (data->suspend_count++)
 		return 0;
@@ -4573,7 +4651,7 @@ static int btusb_resume(struct usb_interface *intf)
 	struct hci_dev *hdev = data->hdev;
 	int err = 0;
 
-	BT_DBG("intf %p", intf);
+	BT_DBG("btusb_resume intf %p", intf);
 
 	if (--data->suspend_count)
 		return 0;
