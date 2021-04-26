@@ -25,7 +25,7 @@
 #include "btbcm.h"
 #include "btrtl.h"
 
-#define VERSION "1.0.0.20210419"
+#define VERSION "1.0.0.20210426"
 
 static bool disable_scofix;
 static bool force_scofix;
@@ -1765,12 +1765,14 @@ static void btusb_work(struct work_struct *work)
 			}
 		} else if (data->air_mode == HCI_NOTIFY_ENABLE_SCO_TRANSP) {
 			/* Check if Alt 6 is supported for Transparent audio */
-			if (btusb_find_altsetting(data, 6)) {
-				data->usb_alt6_packet_flow = true;
-				new_alts = 6;
-			} else if (test_bit(BTUSB_USE_ALT1_FOR_WBS,
+			if (test_bit(BTUSB_USE_ALT1_FOR_WBS,
 						&data->flags)) {
 				new_alts = 1;
+				bt_dev_info(hdev, "alt setting: new_alts = %d", new_alts);
+			} else if (btusb_find_altsetting(data, 6)) {
+				data->usb_alt6_packet_flow = true;
+				new_alts = 6;
+				bt_dev_info(hdev, "alt setting: new_alts = %d", new_alts);
 			} else {
 				bt_dev_err(hdev, "Device does not support ALT setting 6");
 			}
@@ -4384,6 +4386,12 @@ static int btusb_probe(struct usb_interface *intf,
 		set_bit(HCI_QUIRK_SIMULTANEOUS_DISCOVERY, &hdev->quirks);
 		set_bit(HCI_QUIRK_VALID_LE_STATES, &hdev->quirks);
 		set_bit(HCI_QUIRK_NON_PERSISTENT_SETUP, &hdev->quirks);
+		if (btusb_find_altsetting(data, 1)) {
+			set_bit(BTUSB_USE_ALT1_FOR_WBS, &data->flags);
+			hdev->wbs_pkt_len = hci_packet_size_usb_alt[1];
+			bt_dev_info(hdev, "set BTUSB_USE_ALT1_FOR_WBS for alt 1");
+		} else
+			bt_dev_err(hdev, "Device does not support ALT setting 1");
 	}
 #endif
 
